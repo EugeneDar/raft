@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package raft;
+
+import "google/protobuf/empty.proto";
+
+service Raft {
+    rpc SendVoteRequest(VoteRequest) returns (google.protobuf.Empty);
+    rpc SendVoteResponse(VoteResponse) returns (google.protobuf.Empty);
+//   rpc SendClientRequest(ClientRequest) returns
+    rpc SendLogRequest(LogRequest) returns (google.protobuf.Empty);
+    rpc SendLogResponse(LogResponse) returns (google.protobuf.Empty);
+}
+
+message LogEntry {
+    int64 Term = 1;
+    string Msg = 2;
+}
+
+message VoteRequest {
+    string FromNode = 1;
+    int64 Term = 2;
+    int64 LogLength = 3;
+    int64 LogTerm = 4;
+}
+
+message VoteResponse {
+    string FromNode = 1;
+    int64 Term = 2;
+    bool Granted = 3;
+}
+
+message LogRequest {
+    string LeaderId = 1;
+    int64 Term = 2;
+    int64 LogLength = 3;
+    int64 LogTerm = 4;
+    int64 LeaderCommit = 5;
+    repeated LogEntry Entries = 6;
+}
+
+message LogResponse {
+    string Follower = 1;
+    int64 Term = 2;
+    int64 Ack = 3;
+    bool Success = 4;
+}
