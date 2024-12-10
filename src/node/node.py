@@ -13,15 +13,6 @@ class LogEntry:
         self.term = term
         self.msg = msg
 
-# def queue_vote_response(self, reciever_id, from_node, term, granted):
-#     self.request_queue.put(((from_node, term, granted), reciever_id, SEND_VOTE_RESPONSE))
-
-# def queue_log_request(self, reciever_id, leader_id, term, log_length, log_term, leader_commit, entries):
-#     self.request_queue.put(((leader_id, term, log_length, log_term, leader_commit, entries), reciever_id, SEND_LOG_REQUEST))
-
-# def queue_log_response(self, reciever_id, follower, term, ack, success):
-#     self.request_queue.put(((follower, term, ack, success), reciever_id, SEND_LOG_RESPONSE))
-
 
 class Node:
     # on initialization
@@ -61,6 +52,7 @@ class Node:
                 if self.shouldNotStartNewElection:
                     self.shouldNotStartNewElection = False
                     continue
+                print(f"[Node {self.id}]: starting election")
                 self.start_election()
 
     # on node nodeId suspects leader has failed, or on election timeout
@@ -73,9 +65,13 @@ class Node:
         if len(self.log) > 0:
             lastTerm = self.log[-1].term
         for node_id in CLUSTER_NODES:
+            if node_id == self.id:
+                continue
+            print(f"[Node {self.id}]: sending vote request to {node_id}")
             self.grpcClient.queue_vote_request(node_id, self.id, self.currentTerm, len(self.log), lastTerm)
 
     def handle_vote_request(self, fromNode, term, logLength, logTerm):
+        print(f"[Node {self.id}]: received vote request from {fromNode}")
         with self.lock:
             myLogTerm = self.log[-1].term if len(self.log) > 0 else 0
             logOk = (logTerm > myLogTerm) or (logTerm == myLogTerm and logLength >= len(self.log))
@@ -85,9 +81,11 @@ class Node:
                 self.currentTerm = term
                 self.currentRole = FOLLOWER
                 self.votedFor = fromNode
+                print(f"[Node {self.id}]: voted for {fromNode}")
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, True)
                 self.shouldNotStartNewElection = True
             else:
+                print(f"[Node {self.id}]: rejected vote for {fromNode}")
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, False)
     
     def handle_vote_response(self, fromNode, term, granted):
@@ -95,6 +93,7 @@ class Node:
             if self.currentRole == CANDIDATE and term == self.currentTerm and granted:
                 self.votesReceived.add(fromNode)
                 if len(self.votesReceived) > len(CLUSTER_NODES) // 2:
+                    print(f"[Node {self.id}]: became leader!!!")
                     self.currentRole = LEADER
                     self.currentLeader = self.id
                     for follower in CLUSTER_NODES:
@@ -111,6 +110,7 @@ class Node:
 
     # on request to broadcast msg at node nodeId
     def handle_client_request(self, msg):
+        print(f"[Node {self.id}]: received client request")
         with self.lock:
             if self.currentRole == LEADER:
                 self.log.append(LogEntry(term=self.currentTerm, msg=msg))
@@ -137,6 +137,7 @@ class Node:
                     self.replicate_log(follower)
 
     def replicate_log(self, followerId):
+        # print(f"[Node {self.id}]: sending log request to {followerId}")
         i = self.sentLength[followerId]
         entries = self.log[i:]
         prevLogTerm = 0
@@ -147,6 +148,7 @@ class Node:
     def handle_log_request(self, leaderId, term, logLength, logTerm, leaderCommit, entries):
         with self.lock:
             if term > self.currentTerm:
+                print(f"[Node {self.id}]: update leader to {leaderId}")
                 self.currentTerm = term
                 self.votedFor = None
                 self.currentRole = FOLLOWER

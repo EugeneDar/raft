@@ -27,14 +27,18 @@ class RaftClient:
     def _process_requests(self):
         while True:
             request, reciever_id, method = self.request_queue.get(block=True)
-            if method == SEND_VOTE_REQUEST:
-                self._send_vote_request(reciever_id, *request)
-            elif method == SEND_VOTE_RESPONSE:
-                self._send_vote_response(reciever_id, *request)
-            elif method == SEND_LOG_REQUEST:
-                self._send_log_request(reciever_id, *request)
-            elif method == SEND_LOG_RESPONSE:
-                self._send_log_response(reciever_id, *request)
+            try:
+                if method == SEND_VOTE_REQUEST:
+                    self._send_vote_request(reciever_id, *request)
+                elif method == SEND_VOTE_RESPONSE:
+                    self._send_vote_response(reciever_id, *request)
+                elif method == SEND_LOG_REQUEST:
+                    self._send_log_request(reciever_id, *request)
+                elif method == SEND_LOG_RESPONSE:
+                    self._send_log_response(reciever_id, *request)
+            except Exception as e:
+                # print(f"Could not send request: {method}, to {reciever_id}")
+                pass
 
     def _send_vote_request(self, reciever_id, from_node, term, log_length, log_term):
         request = VoteRequest(FromNode=from_node, Term=term, LogLength=log_length, LogTerm=log_term)

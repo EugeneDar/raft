@@ -1,38 +1,38 @@
 import threading
-import time
+import argparse
 
-from grpc_handlers.grpc_listeners import start_grpc_server
 from utils.cluster_info import CLUSTER_NODES
-from node.node import Node
-
-def sleep_forever():
-    while True:
-        time.sleep(5)
+from deploy.deploy import *
 
 
-def deploy_node(node_id):
-    print(f"Deploying node {node_id}")
-    node = Node(node_id)
-
-    heartbeat_thread = threading.Thread(target=node.start_hearbeats, daemon=True)
-    heartbeat_thread.start()
-
-    election_timer_thread = threading.Thread(target=node.start_election_timer, daemon=True)
-    election_timer_thread.start()
-
-    address = CLUSTER_NODES[node_id]
-    server_thread = threading.Thread(target=start_grpc_server, args=(address, node), daemon=True)
-    server_thread.start()
-
-    print(f"Node {node_id} deployed.")
-    sleep_forever()
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--all',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--node_id',
+        type=str
+    )
+    return parser.parse_args()
 
 
 def main():
-    print("Starting Raft cluster...")
-    for node_id in CLUSTER_NODES:
-        node_thread = threading.Thread(target=deploy_node, args=node_id, daemon=True)
-        node_thread.start()
+    args = parse_arguments()
+    if args.all and args.node_id is not None:
+        print("You can't use --all and --node_id together")
+        return
+    
+    if args.node_id is not None:
+        _, _ = create_background_node(args.node_id)
+    elif args.all:
+        print("Starting Raft cluster...")
+        for node_id in CLUSTER_NODES:
+            _, _ = create_background_node(node_id)
+    else:
+        print("You need to specify --all or --node_id")
+        return
 
     sleep_forever()
 
