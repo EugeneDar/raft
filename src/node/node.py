@@ -151,7 +151,7 @@ class Node:
         self.grpcClient.queue_log_request(followerId, self.id, self.currentTerm, i, prevLogTerm, self.commitLength, entries)
 
     def handle_log_request(self, leaderId, term, logLength, logTerm, leaderCommit, entries):
-        print(f"[Node {self.id}]: received log request from {leaderId}")
+        # print(f"[Node {self.id}]: received log request from {leaderId}")
         with self.lock:
             if term > self.currentTerm:
                 print(f"[Node {self.id}]: update leader to {leaderId}")
