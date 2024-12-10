@@ -29,10 +29,14 @@ class RaftService(RaftServicer):
         return Empty()
 
 
-def start_grpc_server(address, node):
+def start_grpc_server(address, node, stop_event):
     server = grpc.server(ThreadPoolExecutor(max_workers=10))
     add_RaftServicer_to_server(RaftService(node), server)
     server.add_insecure_port(address)
-    print(f"gRPC server started on {address}.")
     server.start()
+    print(f"gRPC server started on {address}.")
+
+    stop_event.wait()
+    server.stop(None)
     server.wait_for_termination()
+    print(f"gRPC server stopped on {address}.")

@@ -42,10 +42,12 @@ class Node:
         self.ackedLength = {}
 
     # нужно руками вызывать в фоне
-    def start_election_timer(self):
-        while True:
+    def start_election_timer(self, stop_event):
+        while not stop_event.is_set():
             timeout = random.uniform(ELECTION_TIMEOUT_MIN, ELECTION_TIMEOUT_MAX)
-            time.sleep(timeout)
+            stop_event.wait(timeout)
+            if stop_event.is_set():
+                break
             with self.lock:
                 if self.currentRole == LEADER:
                     self.shouldNotStartNewElection = True
@@ -85,7 +87,8 @@ class Node:
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, True)
                 self.shouldNotStartNewElection = True
             else:
-                print(f"[Node {self.id}]: rejected vote for {fromNode}")
+                debug_reasons = f"#{fromNode} term: {term}, my term: {self.currentTerm}"
+                print(f"[Node {self.id}]: rejected vote for {fromNode}, {debug_reasons}")
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, False)
     
     def handle_vote_response(self, fromNode, term, granted):
@@ -125,9 +128,11 @@ class Node:
                 pass
     
     # нужно руками вызывать в фоне
-    def start_hearbeats(self):
-        while True:
-            time.sleep(HEARTBEAT_INTERVAL)
+    def start_hearbeats(self, stop_event):
+        while not stop_event.is_set():
+            stop_event.wait(HEARTBEAT_INTERVAL)
+            if stop_event.is_set():
+                break
             with self.lock:
                 if self.currentRole != LEADER:
                     continue
@@ -146,6 +151,7 @@ class Node:
         self.grpcClient.queue_log_request(followerId, self.id, self.currentTerm, i, prevLogTerm, self.commitLength, entries)
 
     def handle_log_request(self, leaderId, term, logLength, logTerm, leaderCommit, entries):
+        print(f"[Node {self.id}]: received log request from {leaderId}")
         with self.lock:
             if term > self.currentTerm:
                 print(f"[Node {self.id}]: update leader to {leaderId}")
@@ -153,7 +159,9 @@ class Node:
                 self.votedFor = None
                 self.currentRole = FOLLOWER
                 self.currentLeader = leaderId
-            if term == self.currentTerm and self.currentRole == CANDIDATE:
+            if term == self.currentTerm:
+            # todo think about this
+            # if term == self.currentTerm and self.currentRole == CANDIDATE:
                 self.currentRole = FOLLOWER
                 self.currentLeader = leaderId
             logOk = (len(self.log) >= logLength) and (logLength == 0 or logTerm == self.log[logLength - 1].term)
