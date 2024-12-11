@@ -46,7 +46,7 @@ class RaftClient:
                 elif method == SEND_LOG_RESPONSE:
                     self._send_log_response(reciever_id, *request)
             except Exception as e:
-                print(e)
+                # print(e)
                 log(f"Could not send request: {method}, to {reciever_id}")
                 time.sleep(0.1)  # to wait for the node to start
                 self.stubs[reciever_id] = self.create_stub(reciever_id)

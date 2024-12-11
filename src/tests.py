@@ -175,42 +175,90 @@ def stop_all_nodes(stop_functions):
 #         stop_functions[int(node.id)]()
 
 
-def write_to_wal(nodes, key, value):
+def remove_from_wal(nodes, key, disabled=None):
+    msg = {
+        REQUEST_TYPE: DELETE,
+        KEY: key,
+    }
+    reciever_id = '0'
+    if disabled is not None:
+        reciever_id = [node_id for node_id in CLUSTER_NODES if node_id not in disabled][0]
+    while True:
+        res = nodes[int(reciever_id)].handle_client_request(msg)
+        if LEADER_LOCATION in res:
+            reciever_id = [node_id for node_id in CLUSTER_NODES if CLUSTER_NODES[node_id] == res[LEADER_LOCATION]][0]
+        else:
+            print('Removed from WAL via node:', reciever_id)
+            break
+
+
+def write_to_wal(nodes, key, value, disabled=None):
     msg = {
         REQUEST_TYPE: SET,
         KEY: key,
         VALUE: value
     }
     reciever_id = '0'
+    if disabled is not None:
+        reciever_id = [node_id for node_id in CLUSTER_NODES if node_id not in disabled][0]
     while True:
         res = nodes[int(reciever_id)].handle_client_request(msg)
         if LEADER_LOCATION in res:
             reciever_id = [node_id for node_id in CLUSTER_NODES if CLUSTER_NODES[node_id] == res[LEADER_LOCATION]][0]
         else:
+            print('Wrote to WAL via node:', reciever_id)
             break
 
 
-def read_from_wal(nodes, key):
+def read_from_wal(nodes, key, disabled=None):
     msg = {
         REQUEST_TYPE: GET,
         KEY: key
     }
     reciever_id = '0'
+    if disabled is not None:
+        reciever_id = [node_id for node_id in CLUSTER_NODES if node_id not in disabled][0]
     while True:
         res = nodes[int(reciever_id)].handle_client_request(msg)
         if FOLLOWER_LOCATION in res:
             reciever_id = [node_id for node_id in CLUSTER_NODES if CLUSTER_NODES[node_id] == res[FOLLOWER_LOCATION]][0]
         else:
+            print('Read from WAL via node:', reciever_id)
             return res[VALUE]
 
 
+# @pytest.mark.parametrize("nodes_count,ops_count", [
+#     (2, 3),
+#     (3, 5),
+#     (5, 9),
+#     (6, 3),
+# ])
+# def test_write_and_read(nodes_count, ops_count):
+#     set_nodes_count(nodes_count)
+
+#     nodes, stop_functions = create_nodes(nodes_count)
+
+#     EPSILON = 0.5
+#     time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
+
+#     for step in range(ops_count):
+#         write_to_wal(nodes, str(step) + '_key', str(step) + '_value')
+#         time.sleep(5 * HEARTBEAT_INTERVAL)
+#         assert read_from_wal(nodes, str(step) + '_key') == str(step) + '_value'
+    
+#     for step in range(ops_count):
+#         assert read_from_wal(nodes, str(step) + '_key') == str(step) + '_value'
+
+#     stop_all_nodes(stop_functions)
+
+
 @pytest.mark.parametrize("nodes_count,ops_count", [
-    (2, 3),
     (3, 5),
     (5, 9),
     (6, 3),
+    (7, 4),
 ])
-def test_write_and_read(nodes_count, ops_count):
+def test_write_and_read_with_disabled(nodes_count, ops_count):
     set_nodes_count(nodes_count)
 
     nodes, stop_functions = create_nodes(nodes_count)
@@ -218,12 +266,43 @@ def test_write_and_read(nodes_count, ops_count):
     EPSILON = 0.5
     time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
 
-    for step in range(ops_count):
-        write_to_wal(nodes, str(step) + '_key', str(step) + '_value')
-        time.sleep(5 * HEARTBEAT_INTERVAL)
-        assert read_from_wal(nodes, str(step) + '_key') == str(step) + '_value'
+    can_disable_count = (nodes_count - 1) // 2
+    disabled = set()
+
+    for _ in range(can_disable_count):
+        while True:
+            selected_node = random.choice(nodes)
+            with selected_node.lock:
+                if selected_node.id not in disabled:
+                    stop_functions[int(selected_node.id)]()
+                    disabled.add(selected_node.id)
+                    break
     
-    for step in range(ops_count):
-        assert read_from_wal(nodes, str(step) + '_key') == str(step) + '_value'
+        limit_for_elections = nodes_count
+
+        for _ in range(limit_for_elections):
+            time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
+
+            leader_found = False
+            for node in nodes:
+                with node.lock:
+                    if node.id not in disabled and node.currentRole == LEADER:
+                        leader_found = True
+                        break
+            if leader_found:
+                break
+
+        assert leader_found
+
+        for step in range(ops_count):
+            write_to_wal(nodes, str(step) + '_key', str(step) + '_value', disabled)
+            time.sleep(5 * HEARTBEAT_INTERVAL)
+            assert read_from_wal(nodes, str(step) + '_key', disabled) == str(step) + '_value'
+        
+        for step in range(ops_count):
+            assert read_from_wal(nodes, str(step) + '_key', disabled) == str(step) + '_value'
+        
+        for step in range(ops_count):
+            remove_from_wal(nodes, str(step) + '_key', disabled)
 
     stop_all_nodes(stop_functions)
