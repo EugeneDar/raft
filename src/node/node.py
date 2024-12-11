@@ -48,7 +48,7 @@ class Node:
         rng.seed(int(self.id) ** 4 + int(time.time()))
 
         while not stop_event.is_set():
-            timeout = random.uniform(ELECTION_TIMEOUT_MIN, ELECTION_TIMEOUT_MAX)
+            timeout = rng.uniform(ELECTION_TIMEOUT_MIN, ELECTION_TIMEOUT_MAX)
             stop_event.wait(timeout)
             if stop_event.is_set():
                 break

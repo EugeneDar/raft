@@ -49,7 +49,7 @@ class RaftClient:
                 log(f"Could not send request: {method}, to {reciever_id}")
                 time.sleep(0.1)  # to wait for the node to start
                 self.stubs[reciever_id] = self.create_stub(reciever_id)
-                self.request_queue.put((request, reciever_id, method))
+                # self.request_queue.put((request, reciever_id, method))
                 # raise e
 
     def _send_vote_request(self, reciever_id, from_node, term, log_length, log_term):
