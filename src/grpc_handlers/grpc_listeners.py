@@ -34,9 +34,9 @@ def start_grpc_server(address, node, stop_event):
     add_RaftServicer_to_server(RaftService(node), server)
     server.add_insecure_port(address)
     server.start()
-    print(f"gRPC server started on {address}.")
+    # print(f"gRPC server started on {address}.")
 
     stop_event.wait()
     server.stop(None)
     server.wait_for_termination()
-    print(f"gRPC server stopped on {address}.")
+    # print(f"gRPC server stopped on {address}.")

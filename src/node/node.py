@@ -2,6 +2,7 @@ import random
 import threading
 import time
 
+from my_logger.logger import log
 from utils.constants import *
 from utils.cluster_info import CLUSTER_NODES
 from storage.storage import Storage
@@ -43,6 +44,9 @@ class Node:
 
     # нужно руками вызывать в фоне
     def start_election_timer(self, stop_event):
+        rng = random.Random()
+        rng.seed(int(self.id) ** 4 + int(time.time()))
+
         while not stop_event.is_set():
             timeout = random.uniform(ELECTION_TIMEOUT_MIN, ELECTION_TIMEOUT_MAX)
             stop_event.wait(timeout)
@@ -54,7 +58,7 @@ class Node:
                 if self.shouldNotStartNewElection:
                     self.shouldNotStartNewElection = False
                     continue
-                print(f"[Node {self.id}]: starting election")
+                log(f"[Node {self.id}]: starting election")
                 self.start_election()
 
     # on node nodeId suspects leader has failed, or on election timeout
@@ -69,34 +73,38 @@ class Node:
         for node_id in CLUSTER_NODES:
             if node_id == self.id:
                 continue
-            print(f"[Node {self.id}]: sending vote request to {node_id}")
+            log(f"[Node {self.id}]: sending vote request to {node_id}")
             self.grpcClient.queue_vote_request(node_id, self.id, self.currentTerm, len(self.log), lastTerm)
 
     def handle_vote_request(self, fromNode, term, logLength, logTerm):
-        print(f"[Node {self.id}]: received vote request from {fromNode}")
+        log(f"[Node {self.id}]: received vote request from {fromNode}")
         with self.lock:
             myLogTerm = self.log[-1].term if len(self.log) > 0 else 0
             logOk = (logTerm > myLogTerm) or (logTerm == myLogTerm and logLength >= len(self.log))
             termOk = (term > self.currentTerm) or (term == self.currentTerm and self.votedFor in {None, fromNode})
 
             if logOk and termOk:
+                # it should be here because we should not update
+                # term before stopping a wish to start new election
+                self.shouldNotStartNewElection = True
+
                 self.currentTerm = term
                 self.currentRole = FOLLOWER
                 self.votedFor = fromNode
-                print(f"[Node {self.id}]: voted for {fromNode}")
+                log(f"[Node {self.id}]: voted for {fromNode}")
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, True)
-                self.shouldNotStartNewElection = True
             else:
                 debug_reasons = f"#{fromNode} term: {term}, my term: {self.currentTerm}"
-                print(f"[Node {self.id}]: rejected vote for {fromNode}, {debug_reasons}")
+                log(f"[Node {self.id}]: rejected vote for {fromNode}, {debug_reasons}")
                 self.grpcClient.queue_vote_response(fromNode, self.id, self.currentTerm, False)
     
     def handle_vote_response(self, fromNode, term, granted):
+        log(f"[Node {self.id}]: received vote response from {fromNode}")
         with self.lock:
             if self.currentRole == CANDIDATE and term == self.currentTerm and granted:
                 self.votesReceived.add(fromNode)
                 if len(self.votesReceived) > len(CLUSTER_NODES) // 2:
-                    print(f"[Node {self.id}]: became leader!!!")
+                    log(f"[Node {self.id}]: became leader!!!")
                     self.currentRole = LEADER
                     self.currentLeader = self.id
                     for follower in CLUSTER_NODES:
@@ -113,7 +121,10 @@ class Node:
 
     # on request to broadcast msg at node nodeId
     def handle_client_request(self, msg):
-        print(f"[Node {self.id}]: received client request")
+        # TODO if is not leader and not read request, return leader's address
+        # TODO if it's leader and read request, return random replica's address
+
+        log(f"[Node {self.id}]: received client request")
         with self.lock:
             if self.currentRole == LEADER:
                 self.log.append(LogEntry(term=self.currentTerm, msg=msg))
@@ -142,7 +153,7 @@ class Node:
                     self.replicate_log(follower)
 
     def replicate_log(self, followerId):
-        # print(f"[Node {self.id}]: sending log request to {followerId}")
+        # log(f"[Node {self.id}]: sending log request to {followerId}")
         i = self.sentLength[followerId]
         entries = self.log[i:]
         prevLogTerm = 0
@@ -151,10 +162,10 @@ class Node:
         self.grpcClient.queue_log_request(followerId, self.id, self.currentTerm, i, prevLogTerm, self.commitLength, entries)
 
     def handle_log_request(self, leaderId, term, logLength, logTerm, leaderCommit, entries):
-        # print(f"[Node {self.id}]: received log request from {leaderId}")
+        # log(f"[Node {self.id}]: received log request from {leaderId}")
         with self.lock:
             if term > self.currentTerm:
-                print(f"[Node {self.id}]: update leader to {leaderId}")
+                log(f"[Node {self.id}]: update leader to {leaderId}")
                 self.currentTerm = term
                 self.votedFor = None
                 self.currentRole = FOLLOWER

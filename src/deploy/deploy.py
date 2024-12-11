@@ -1,6 +1,7 @@
 import time
 import threading
 
+from my_logger.logger import log
 from node.node import Node
 from grpc_handlers.grpc_listeners import start_grpc_server
 from utils.cluster_info import CLUSTER_NODES
@@ -28,14 +29,14 @@ def _deploy_node(node, node_id, stop_event):
     server_thread = threading.Thread(target=start_grpc_server, args=(address, node, stop_event), daemon=True)
     server_thread.start()
 
-    print(f"Node {node_id} deployed.")
+    log(f"Node {node_id} deployed.")
 
     sleep_forever(stop_event)
 
     heartbeat_thread.join()
     election_timer_thread.join()
     server_thread.join()
-    print(f"Node {node_id} was stopped.")
+    log(f"Node {node_id} was stopped.")
 
 
 def create_background_node(node_id):
