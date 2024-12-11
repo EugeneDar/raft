@@ -7,9 +7,21 @@ import "google/protobuf/empty.proto";
 service Raft {
     rpc SendVoteRequest(VoteRequest) returns (google.protobuf.Empty);
     rpc SendVoteResponse(VoteResponse) returns (google.protobuf.Empty);
-//   rpc SendClientRequest(ClientRequest) returns
+    rpc SendClientRequest(ClientRequest) returns (ClientResponse);
     rpc SendLogRequest(LogRequest) returns (google.protobuf.Empty);
     rpc SendLogResponse(LogResponse) returns (google.protobuf.Empty);
+}
+
+message ClientRequest {
+    string RequestType = 1;  // "GET", "SET", "DELETE"
+    string Key = 2;
+    string Value = 3;
+}
+
+message ClientResponse {
+    string Key = 1;
+    string Value = 2;
+    string Status = 3;
 }
 
 message LogEntry {

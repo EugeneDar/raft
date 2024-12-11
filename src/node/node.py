@@ -1,6 +1,7 @@
 import random
 import threading
 import time
+import json
 
 from my_logger.logger import log
 from utils.constants import *
@@ -121,23 +122,37 @@ class Node:
 
     # on request to broadcast msg at node nodeId
     def handle_client_request(self, msg):
-        # TODO if is not leader and not read request, return leader's address
-        # TODO if it's leader and read request, return random replica's address
-
-        log(f"[Node {self.id}]: received client request")
+        log(f"[Node {self.id}]: received client request {msg[REQUEST_TYPE]}")
         with self.lock:
+            request_type, key = msg[REQUEST_TYPE], msg[KEY]
+
             if self.currentRole == LEADER:
-                self.log.append(LogEntry(term=self.currentTerm, msg=msg))
-                self.ackedLength[self.id] = len(self.log)
-                for follower in CLUSTER_NODES:
-                    if follower == self.id:
-                        continue
-                    self.replicate_log(follower)
+                if request_type == GET:
+                    nodes_ids = [node_id for node_id in CLUSTER_NODES if node_id != self.id]
+                    some_follower_id = random.choice(nodes_ids)
+                    return {
+                        FOLLOWER_LOCATION: CLUSTER_NODES[some_follower_id]
+                    }
+                else:
+                    self.log.append(LogEntry(term=self.currentTerm, msg=json.dumps(msg)))
+                    self.ackedLength[self.id] = len(self.log)
+                    for follower in CLUSTER_NODES:
+                        if follower == self.id:
+                            continue
+                        self.replicate_log(follower)
+                    return {
+                        SUCCESS: True
+                    }
             else:
-                # TODO: redirect to leader
-                # self.send_msg(self.currentLeader, f"ClientRequest, {self.id}, {msg}")
-                pass
-    
+                if request_type == GET:
+                    return {
+                        VALUE: self.storage.get(key)
+                    }
+                else:
+                    return {
+                        LEADER_LOCATION: CLUSTER_NODES[self.currentLeader]
+                    }
+
     # нужно руками вызывать в фоне
     def start_hearbeats(self, stop_event):
         while not stop_event.is_set():

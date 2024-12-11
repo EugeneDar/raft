@@ -45,6 +45,11 @@ class RaftStub(object):
                 request_serializer=raft__pb2.VoteResponse.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 _registered_method=True)
+        self.SendClientRequest = channel.unary_unary(
+                '/raft.Raft/SendClientRequest',
+                request_serializer=raft__pb2.ClientRequest.SerializeToString,
+                response_deserializer=raft__pb2.ClientResponse.FromString,
+                _registered_method=True)
         self.SendLogRequest = channel.unary_unary(
                 '/raft.Raft/SendLogRequest',
                 request_serializer=raft__pb2.LogRequest.SerializeToString,
@@ -72,9 +77,14 @@ class RaftServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SendClientRequest(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def SendLogRequest(self, request, context):
-        """rpc SendClientRequest(ClientRequest) returns
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -97,6 +107,11 @@ def add_RaftServicer_to_server(servicer, server):
                     servicer.SendVoteResponse,
                     request_deserializer=raft__pb2.VoteResponse.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'SendClientRequest': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendClientRequest,
+                    request_deserializer=raft__pb2.ClientRequest.FromString,
+                    response_serializer=raft__pb2.ClientResponse.SerializeToString,
             ),
             'SendLogRequest': grpc.unary_unary_rpc_method_handler(
                     servicer.SendLogRequest,
@@ -163,6 +178,33 @@ class Raft(object):
             '/raft.Raft/SendVoteResponse',
             raft__pb2.VoteResponse.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SendClientRequest(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/raft.Raft/SendClientRequest',
+            raft__pb2.ClientRequest.SerializeToString,
+            raft__pb2.ClientResponse.FromString,
             options,
             channel_credentials,
             insecure,

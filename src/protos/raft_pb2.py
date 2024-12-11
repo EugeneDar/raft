@@ -25,23 +25,27 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nraft.proto\x12\x04raft\x1a\x1bgoogle/protobuf/empty.proto\"%\n\x08LogEntry\x12\x0c\n\x04Term\x18\x01 \x01(\x03\x12\x0b\n\x03Msg\x18\x02 \x01(\t\"Q\n\x0bVoteRequest\x12\x10\n\x08\x46romNode\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x11\n\tLogLength\x18\x03 \x01(\x03\x12\x0f\n\x07LogTerm\x18\x04 \x01(\x03\"?\n\x0cVoteResponse\x12\x10\n\x08\x46romNode\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x0f\n\x07Granted\x18\x03 \x01(\x08\"\x87\x01\n\nLogRequest\x12\x10\n\x08LeaderId\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x11\n\tLogLength\x18\x03 \x01(\x03\x12\x0f\n\x07LogTerm\x18\x04 \x01(\x03\x12\x14\n\x0cLeaderCommit\x18\x05 \x01(\x03\x12\x1f\n\x07\x45ntries\x18\x06 \x03(\x0b\x32\x0e.raft.LogEntry\"K\n\x0bLogResponse\x12\x10\n\x08\x46ollower\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x0b\n\x03\x41\x63k\x18\x03 \x01(\x03\x12\x0f\n\x07Success\x18\x04 \x01(\x08\x32\xfe\x01\n\x04Raft\x12<\n\x0fSendVoteRequest\x12\x11.raft.VoteRequest\x1a\x16.google.protobuf.Empty\x12>\n\x10SendVoteResponse\x12\x12.raft.VoteResponse\x1a\x16.google.protobuf.Empty\x12:\n\x0eSendLogRequest\x12\x10.raft.LogRequest\x1a\x16.google.protobuf.Empty\x12<\n\x0fSendLogResponse\x12\x11.raft.LogResponse\x1a\x16.google.protobuf.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nraft.proto\x12\x04raft\x1a\x1bgoogle/protobuf/empty.proto\"@\n\rClientRequest\x12\x13\n\x0bRequestType\x18\x01 \x01(\t\x12\x0b\n\x03Key\x18\x02 \x01(\t\x12\r\n\x05Value\x18\x03 \x01(\t\"<\n\x0e\x43lientResponse\x12\x0b\n\x03Key\x18\x01 \x01(\t\x12\r\n\x05Value\x18\x02 \x01(\t\x12\x0e\n\x06Status\x18\x03 \x01(\t\"%\n\x08LogEntry\x12\x0c\n\x04Term\x18\x01 \x01(\x03\x12\x0b\n\x03Msg\x18\x02 \x01(\t\"Q\n\x0bVoteRequest\x12\x10\n\x08\x46romNode\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x11\n\tLogLength\x18\x03 \x01(\x03\x12\x0f\n\x07LogTerm\x18\x04 \x01(\x03\"?\n\x0cVoteResponse\x12\x10\n\x08\x46romNode\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x0f\n\x07Granted\x18\x03 \x01(\x08\"\x87\x01\n\nLogRequest\x12\x10\n\x08LeaderId\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x11\n\tLogLength\x18\x03 \x01(\x03\x12\x0f\n\x07LogTerm\x18\x04 \x01(\x03\x12\x14\n\x0cLeaderCommit\x18\x05 \x01(\x03\x12\x1f\n\x07\x45ntries\x18\x06 \x03(\x0b\x32\x0e.raft.LogEntry\"K\n\x0bLogResponse\x12\x10\n\x08\x46ollower\x18\x01 \x01(\t\x12\x0c\n\x04Term\x18\x02 \x01(\x03\x12\x0b\n\x03\x41\x63k\x18\x03 \x01(\x03\x12\x0f\n\x07Success\x18\x04 \x01(\x08\x32\xbe\x02\n\x04Raft\x12<\n\x0fSendVoteRequest\x12\x11.raft.VoteRequest\x1a\x16.google.protobuf.Empty\x12>\n\x10SendVoteResponse\x12\x12.raft.VoteResponse\x1a\x16.google.protobuf.Empty\x12>\n\x11SendClientRequest\x12\x13.raft.ClientRequest\x1a\x14.raft.ClientResponse\x12:\n\x0eSendLogRequest\x12\x10.raft.LogRequest\x1a\x16.google.protobuf.Empty\x12<\n\x0fSendLogResponse\x12\x11.raft.LogResponse\x1a\x16.google.protobuf.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'raft_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_LOGENTRY']._serialized_start=49
-  _globals['_LOGENTRY']._serialized_end=86
-  _globals['_VOTEREQUEST']._serialized_start=88
-  _globals['_VOTEREQUEST']._serialized_end=169
-  _globals['_VOTERESPONSE']._serialized_start=171
-  _globals['_VOTERESPONSE']._serialized_end=234
-  _globals['_LOGREQUEST']._serialized_start=237
-  _globals['_LOGREQUEST']._serialized_end=372
-  _globals['_LOGRESPONSE']._serialized_start=374
-  _globals['_LOGRESPONSE']._serialized_end=449
-  _globals['_RAFT']._serialized_start=452
-  _globals['_RAFT']._serialized_end=706
+  _globals['_CLIENTREQUEST']._serialized_start=49
+  _globals['_CLIENTREQUEST']._serialized_end=113
+  _globals['_CLIENTRESPONSE']._serialized_start=115
+  _globals['_CLIENTRESPONSE']._serialized_end=175
+  _globals['_LOGENTRY']._serialized_start=177
+  _globals['_LOGENTRY']._serialized_end=214
+  _globals['_VOTEREQUEST']._serialized_start=216
+  _globals['_VOTEREQUEST']._serialized_end=297
+  _globals['_VOTERESPONSE']._serialized_start=299
+  _globals['_VOTERESPONSE']._serialized_end=362
+  _globals['_LOGREQUEST']._serialized_start=365
+  _globals['_LOGREQUEST']._serialized_end=500
+  _globals['_LOGRESPONSE']._serialized_start=502
+  _globals['_LOGRESPONSE']._serialized_end=577
+  _globals['_RAFT']._serialized_start=580
+  _globals['_RAFT']._serialized_end=898
 # @@protoc_insertion_point(module_scope)

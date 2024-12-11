@@ -1,4 +1,6 @@
 import threading
+import json
+from utils.constants import *
 
 class Storage:
     def __init__(self):
@@ -21,5 +23,13 @@ class Storage:
             return False
 
     def handle_log_delivery(self, msg):
-        # TODO
-        raise NotImplementedError
+        msg = json.loads(msg)
+        request_type = msg[REQUEST_TYPE]
+        if request_type == GET:
+            raise NotImplementedError
+        elif request_type == SET:
+            self.set(msg[KEY], msg[VALUE])
+        elif request_type == DELETE:
+            self.delete(msg[KEY])
+        else:
+            raise ValueError(f"Invalid request type: {request_type}")
