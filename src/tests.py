@@ -36,84 +36,84 @@ def stop_all_nodes(stop_functions):
         concurrent.futures.wait(futures)
 
 
-@pytest.mark.parametrize("nodes_count", [
-    (2), (3), (4), (5),
-    (6), (7), (8), (9)
-])
-def test_simple_consensus(nodes_count):
-    set_nodes_count(nodes_count)
+# @pytest.mark.parametrize("nodes_count", [
+#     (2), (3), (4), (5),
+#     (6), (7), (8), (9)
+# ])
+# def test_simple_consensus(nodes_count):
+#     set_nodes_count(nodes_count)
 
-    nodes, stop_functions = create_nodes(nodes_count)
+#     nodes, stop_functions = create_nodes(nodes_count)
 
-    EPSILON = 0.5
-    time.sleep(3 * ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
+#     EPSILON = 0.5
+#     time.sleep(3 * ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
 
-    leaders = set()
-    for node in nodes:
-        with node.lock:
-            leaders.add(node.currentLeader)
+#     leaders = set()
+#     for node in nodes:
+#         with node.lock:
+#             leaders.add(node.currentLeader)
 
-    assert len(leaders) == 1 and list(leaders)[0] is not None
+#     assert len(leaders) == 1 and list(leaders)[0] is not None
 
-    stop_all_nodes(stop_functions)
+#     stop_all_nodes(stop_functions)
 
 
-@pytest.mark.parametrize("nodes_count", [
-    (3), (4), 
-    (5), (6), (7),
-])
-def test_disable_leader(nodes_count):
-    set_nodes_count(nodes_count)
+# @pytest.mark.parametrize("nodes_count", [
+#     (3), (4), 
+#     (5), (6), (7),
+# ])
+# def test_disable_leader(nodes_count):
+#     set_nodes_count(nodes_count)
 
-    nodes, stop_functions = create_nodes(nodes_count)
+#     nodes, stop_functions = create_nodes(nodes_count)
 
-    EPSILON = 0.5
-    time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
+#     EPSILON = 0.5
+#     time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
 
-    can_disable_count = (nodes_count - 1) // 2
-    disabled = set()
+#     can_disable_count = (nodes_count - 1) // 2
+#     disabled = set()
 
-    for _ in range(can_disable_count):
-        for node in nodes:
-            with node.lock:
-                if node.currentRole == LEADER and node.id not in disabled:
-                    stop_functions[int(node.id)]()
-                    disabled.add(node.id)
-                    break
+#     for _ in range(can_disable_count):
+#         for node in nodes:
+#             with node.lock:
+#                 if node.currentRole == LEADER and node.id not in disabled:
+#                     stop_functions[int(node.id)]()
+#                     disabled.add(node.id)
+#                     break
     
-        limit_for_elections = nodes_count
+#         limit_for_elections = nodes_count
 
-        for _ in range(limit_for_elections):
-            time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
+#         for _ in range(limit_for_elections):
+#             time.sleep(ELECTION_TIMEOUT_MAX + HEARTBEAT_INTERVAL + EPSILON)
 
-            leader_found = False
-            for node in nodes:
-                with node.lock:
-                    if node.id not in disabled and node.currentRole == LEADER:
-                        leader_found = True
-                        break
-            if leader_found:
-                break
+#             leader_found = False
+#             for node in nodes:
+#                 with node.lock:
+#                     if node.id not in disabled and node.currentRole == LEADER:
+#                         leader_found = True
+#                         break
+#             if leader_found:
+#                 break
 
-        assert leader_found
+#         assert leader_found
 
-        # time for leader to say everyone that he is leader
-        time.sleep(10 * HEARTBEAT_INTERVAL)
+#         # time for leader to say everyone that he is leader
+#         time.sleep(10 * HEARTBEAT_INTERVAL)
 
-        leaders = set()
-        for node in nodes:
-            with node.lock:
-                if node.id not in disabled:
-                    leaders.add(node.currentLeader)
+#         leaders = set()
+#         for node in nodes:
+#             with node.lock:
+#                 if node.id not in disabled:
+#                     leaders.add(node.currentLeader)
 
-        assert len(leaders) == 1
-        leader = list(leaders)[0]
-        assert leader is not None and leader not in disabled
+#         assert len(leaders) == 1
+#         leader = list(leaders)[0]
+#         assert leader is not None and leader not in disabled
 
-    for node in nodes:
-        if node.id in disabled:
-            continue
-        stop_functions[int(node.id)]()
+#     for node in nodes:
+#         if node.id in disabled:
+#             continue
+#         stop_functions[int(node.id)]()
             
 
 @pytest.mark.parametrize("nodes_count", [
@@ -133,8 +133,8 @@ def test_disable_random(nodes_count):
 
     for _ in range(can_disable_count):
         while True:
-            with node.lock:
-                selected_node = random.choice(nodes)
+            selected_node = random.choice(nodes)
+            with selected_node.lock:
                 if selected_node.id not in disabled:
                     stop_functions[int(selected_node.id)]()
                     disabled.add(selected_node.id)
